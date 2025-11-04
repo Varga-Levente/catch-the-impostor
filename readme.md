@@ -10,6 +10,11 @@ A játék menet a következő:
 4. Ha az impostort sikerül kitalálni, a többiek nyernek, különben az impostor győz.
 
 ---
+# 🌐 [DEMO](https://catch-the-impostor.onrender.com/)
+A demo elérhető a fenti linken, de elképzelhető, hogy az alvó szerver miatt elsőre nem működik a szoba létrehozás és egyéb szerver oldali funkciók.
+Ilyenkor kérlek próbáld újra pár másodperc múlva.
+
+---
 
 ## 🧩 Projekt technikai felépítése
 
