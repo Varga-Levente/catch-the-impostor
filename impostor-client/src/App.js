@@ -63,7 +63,7 @@ const App = () => {
       setTimeLeft(time);
     });
 
-    socketRef.current.on("votingStarted", (players) => {
+    socketRef.current.on("votingStarted", () => {
       setVotes({});
       setGameState("voting");
     });
@@ -297,18 +297,6 @@ const App = () => {
     setNewRoomName("");
   };
 
-  // Új játék
-  const handlePlayAgain = () => {
-    setGameState("lobby");
-    setCurrentRoom(null);
-    setIsHost(false);
-    setMyWord("");
-    setVotes({});
-    setImpostorResult(null);
-    setRoomPins({});
-    setNewRoomName("");
-  };
-
   // PIN mező változásának kezelése
   const handlePinChange = (roomName, value) => {
     setRoomPins(prev => ({
@@ -321,14 +309,9 @@ const App = () => {
       <div className="app">
         <header className="app-header">
           <h1 className="neon-title">
-            <span className="impostor-title">IMPOSZTOROS</span>
-            <span className="game-title">JÁTÉK</span>
+            <span className="game-title">Catch The </span>
+            <span className="impostor-title">IMPOSTOR</span>
           </h1>
-          {currentRoom && (
-              <div className="current-room-info">
-                Szoba: {currentRoom.name} | Játékosok: {currentRoom.players?.length || 0}
-              </div>
-          )}
         </header>
 
         <main className="main-content">
@@ -459,12 +442,10 @@ const App = () => {
                   </div>
                   {myWord === "IMPOSZTOR" ? (
                       <div className="impostor-hint">
-                        👹 TE VAGY AZ IMPOSZTOR! 👹<br />
                         Próbálj elrejtőzni és megtéveszteni a többieket!
                       </div>
                   ) : (
                       <div className="normal-hint">
-                        😇 Ártatlan vagy! 😇<br />
                         Találd ki, ki az imposztor!
                       </div>
                   )}
@@ -540,11 +521,8 @@ const App = () => {
                 </div>
 
                 <div className="result-actions">
-                  <button className="neon-button" onClick={handlePlayAgain}>
-                    Új játék
-                  </button>
                   <button className="neon-button secondary" onClick={handleLeaveRoom}>
-                    Vissza a lobbyba
+                    Új játék
                   </button>
                 </div>
               </div>
