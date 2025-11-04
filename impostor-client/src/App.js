@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 import "./App.css";
 
+// API alap URL environment változóból
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:3001";
+
 const App = () => {
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [currentRoom, setCurrentRoom] = useState(null);
-  const [roomPins, setRoomPins] = useState({}); // Objektum a különböző szobák PIN-jeinek tárolására
+  const [roomPins, setRoomPins] = useState({});
   const [newRoomName, setNewRoomName] = useState("");
   const [isHost, setIsHost] = useState(false);
 
@@ -29,9 +32,9 @@ const App = () => {
     currentRoomRef.current = currentRoom;
   }, [currentRoom]);
 
-  // Socket.io setup
+  // Socket.io setup - API_BASE_URL használata
   useEffect(() => {
-    socketRef.current = io("http://localhost:3001", {
+    socketRef.current = io(API_BASE_URL, {
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000
@@ -106,7 +109,7 @@ const App = () => {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // Név megadása
+  // Név megadása - API_BASE_URL használata
   const handleSetName = async () => {
     if (!playerName.trim()) return;
     const newPlayerId = Date.now().toString();
@@ -114,7 +117,7 @@ const App = () => {
     setGameState("lobby");
 
     try {
-      const res = await fetch("http://localhost:3001/rooms");
+      const res = await fetch(`${API_BASE_URL}/rooms`);
       const data = await res.json();
       setRooms(data);
     } catch (err) {
@@ -122,12 +125,12 @@ const App = () => {
     }
   };
 
-  // Szoba létrehozása
+  // Szoba létrehozása - API_BASE_URL használata
   const handleCreateRoom = async () => {
     if (!newRoomName.trim()) return;
-    
+
     try {
-      const res = await fetch("http://localhost:3001/create-room", {
+      const res = await fetch(`${API_BASE_URL}/create-room`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newRoomName, hostName: playerName }),
@@ -145,7 +148,7 @@ const App = () => {
         hostId: data.hostId,
         players: data.room.players
       };
-      
+
       setCurrentRoom(roomData);
       setPlayerId(data.hostId);
       setIsHost(true);
@@ -169,7 +172,7 @@ const App = () => {
     }
   };
 
-  // Szobához csatlakozás
+  // Szobához csatlakozás - API_BASE_URL használata
   const handleJoinRoom = async (roomName, pin) => {
     if (!pin) {
       alert("Add meg a PIN kódot!");
@@ -177,7 +180,7 @@ const App = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:3001/join-room", {
+      const res = await fetch(`${API_BASE_URL}/join-room`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: roomName, pin, playerName }),
@@ -190,7 +193,7 @@ const App = () => {
       }
 
       setPlayerId(data.id);
-      const roomData = { 
+      const roomData = {
         name: data.room.name,
         pin: data.room.pin,
         hostId: data.room.hostId,
@@ -217,7 +220,7 @@ const App = () => {
     }
   };
 
-  // Játék indítása
+  // Játék indítása - API_BASE_URL használata
   const handleStartGame = async () => {
     if (!currentRoom || currentRoom.players.length < 3) {
       alert("Legalább 3 játékosnak kell lennie a játék indításához!");
@@ -226,12 +229,12 @@ const App = () => {
 
     try {
       console.log("Starting game in room:", currentRoom.name);
-      const response = await fetch("http://localhost:3001/start", {
+      const response = await fetch(`${API_BASE_URL}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roomName: currentRoom.name }),
       });
-      
+
       const result = await response.json();
       console.log("Start game response:", result);
     } catch (err) {
@@ -239,10 +242,10 @@ const App = () => {
     }
   };
 
-  // Szavazás
+  // Szavazás - API_BASE_URL használata
   const handleVote = async (votedId) => {
     try {
-      await fetch("http://localhost:3001/vote", {
+      await fetch(`${API_BASE_URL}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -256,12 +259,12 @@ const App = () => {
     }
   };
 
-  // Játékos kirúgása
+  // Játékos kirúgása - API_BASE_URL használata
   const handleKickPlayer = async (playerIdToKick) => {
     if (!window.confirm("Biztosan ki akarod rúgni ezt a játékost?")) return;
 
     try {
-      await fetch("http://localhost:3001/kick-player", {
+      await fetch(`${API_BASE_URL}/kick-player`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -279,9 +282,9 @@ const App = () => {
   // Szobából kilépés - JAVÍTOTT: üríti a mezőket
   const handleLeaveRoom = () => {
     if (currentRoom && playerId) {
-      socketRef.current.emit("leaveRoom", { 
-        roomName: currentRoom.name, 
-        playerId 
+      socketRef.current.emit("leaveRoom", {
+        roomName: currentRoom.name,
+        playerId
       });
     }
     setCurrentRoom(null);
@@ -290,8 +293,8 @@ const App = () => {
     setMyWord("");
     setVotes({});
     setImpostorResult(null);
-    setRoomPins({}); // PIN mezők ürítése
-    setNewRoomName(""); // Új szoba név mező ürítése
+    setRoomPins({});
+    setNewRoomName("");
   };
 
   // Új játék
@@ -302,11 +305,11 @@ const App = () => {
     setMyWord("");
     setVotes({});
     setImpostorResult(null);
-    setRoomPins({}); // PIN mezők ürítése
-    setNewRoomName(""); // Új szoba név mező ürítése
+    setRoomPins({});
+    setNewRoomName("");
   };
 
-  // PIN mező változásának kezelése - JAVÍTOTT: minden szobához külön PIN
+  // PIN mező változásának kezelése
   const handlePinChange = (roomName, value) => {
     setRoomPins(prev => ({
       ...prev,
@@ -315,245 +318,245 @@ const App = () => {
   };
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1 className="neon-title">
-          <span className="impostor-title">IMPOSZTOROS</span>
-          <span className="game-title">JÁTÉK</span>
-        </h1>
-        {currentRoom && (
-          <div className="current-room-info">
-            Szoba: {currentRoom.name} | Játékosok: {currentRoom.players?.length || 0}
-          </div>
-        )}
-      </header>
-
-      <main className="main-content">
-        {/* Név megadása */}
-        {gameState === "joining" && (
-          <div className="join-screen">
-            <h2 className="centered-text">Add meg a neved</h2>
-            <input
-              className="neon-input"
-              placeholder="Add meg a neved"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              maxLength={20}
-            />
-            <button className="neon-button" onClick={handleSetName}>
-              Folytatás
-            </button>
-          </div>
-        )}
-
-        {/* Lobby - JAVÍTOTT: minden szobához külön PIN mező */}
-        {gameState === "lobby" && (
-          <div className="lobby-screen">
-            <h2 className="centered-text">Szobák</h2>
-            {rooms.length === 0 ? (
-              <p>Nincsenek elérhető szobák</p>
-            ) : (
-              <div className="room-list">
-                {rooms.map((room) => (
-                  <div key={room.name} className="room-item">
-                    <span>{room.name} ({room.playersCount} játékos)</span>
-                    <div className="room-actions">
-                      <input
-                        placeholder="PIN"
-                        value={roomPins[room.name] || ''}
-                        onChange={(e) => handlePinChange(room.name, e.target.value)}
-                        className="neon-input pin-input"
-                        type="password"
-                        maxLength={4}
-                      />
-                      <button
-                        className="neon-button"
-                        onClick={() => handleJoinRoom(room.name, roomPins[room.name] || '')}
-                      >
-                        Csatlakozás
-                      </button>
-                    </div>
-                  </div>
-                ))}
+      <div className="app">
+        <header className="app-header">
+          <h1 className="neon-title">
+            <span className="impostor-title">IMPOSZTOROS</span>
+            <span className="game-title">JÁTÉK</span>
+          </h1>
+          {currentRoom && (
+              <div className="current-room-info">
+                Szoba: {currentRoom.name} | Játékosok: {currentRoom.players?.length || 0}
               </div>
-            )}
+          )}
+        </header>
 
-            <div className="create-room">
-              <h3 className="centered-text">Új szoba létrehozása</h3>
-              <input
-                placeholder="Szoba neve"
-                value={newRoomName}
-                onChange={(e) => setNewRoomName(e.target.value)}
-                className="neon-input"
-                maxLength={20}
-              />
-              <button className="neon-button" onClick={handleCreateRoom}>
-                Szoba létrehozása
-              </button>
-            </div>
-          </div>
-        )}
+        <main className="main-content">
+          {/* Név megadása */}
+          {gameState === "joining" && (
+              <div className="join-screen">
+                <h2 className="centered-text">Add meg a neved</h2>
+                <input
+                    className="neon-input"
+                    placeholder="Add meg a neved"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    maxLength={20}
+                />
+                <button className="neon-button" onClick={handleSetName}>
+                  Folytatás
+                </button>
+              </div>
+          )}
 
-        {/* Várakozás a játékra */}
-        {gameState === "waiting" && currentRoom && (
-          <div className="waiting-screen">
-            <div className="room-header">
-              <h2 className="centered-text">Szoba: {currentRoom.name}</h2>
-              <p className="neon-pin">
-                Szoba PIN: <strong>{currentRoom.pin}</strong>
-              </p>
-              <button className="neon-button secondary" onClick={handleLeaveRoom}>
-                Kilépés a szobából
-              </button>
-            </div>
+          {/* Lobby */}
+          {gameState === "lobby" && (
+              <div className="lobby-screen">
+                <h2 className="centered-text">Szobák</h2>
+                {rooms.length === 0 ? (
+                    <p>Nincsenek elérhető szobák</p>
+                ) : (
+                    <div className="room-list">
+                      {rooms.map((room) => (
+                          <div key={room.name} className="room-item">
+                            <span>{room.name} ({room.playersCount} játékos)</span>
+                            <div className="room-actions">
+                              <input
+                                  placeholder="PIN"
+                                  value={roomPins[room.name] || ''}
+                                  onChange={(e) => handlePinChange(room.name, e.target.value)}
+                                  className="neon-input pin-input"
+                                  type="password"
+                                  maxLength={4}
+                              />
+                              <button
+                                  className="neon-button"
+                                  onClick={() => handleJoinRoom(room.name, roomPins[room.name] || '')}
+                              >
+                                Csatlakozás
+                              </button>
+                            </div>
+                          </div>
+                      ))}
+                    </div>
+                )}
 
-            <h3 className="centered-text">Játékosok ({currentRoom.players?.length || 0}/10):</h3>
-            <div className="players-list">
-              {currentRoom.players?.map((p) => (
-                <div key={p.id} className={`player-item ${p.id === currentRoom.hostId ? 'host-player' : ''}`}>
+                <div className="create-room">
+                  <h3 className="centered-text">Új szoba létrehozása</h3>
+                  <input
+                      placeholder="Szoba neve"
+                      value={newRoomName}
+                      onChange={(e) => setNewRoomName(e.target.value)}
+                      className="neon-input"
+                      maxLength={20}
+                  />
+                  <button className="neon-button" onClick={handleCreateRoom}>
+                    Szoba létrehozása
+                  </button>
+                </div>
+              </div>
+          )}
+
+          {/* Várakozás a játékra */}
+          {gameState === "waiting" && currentRoom && (
+              <div className="waiting-screen">
+                <div className="room-header">
+                  <h2 className="centered-text">Szoba: {currentRoom.name}</h2>
+                  <p className="neon-pin">
+                    Szoba PIN: <strong>{currentRoom.pin}</strong>
+                  </p>
+                  <button className="neon-button secondary" onClick={handleLeaveRoom}>
+                    Kilépés a szobából
+                  </button>
+                </div>
+
+                <h3 className="centered-text">Játékosok ({currentRoom.players?.length || 0}/10):</h3>
+                <div className="players-list">
+                  {currentRoom.players?.map((p) => (
+                      <div key={p.id} className={`player-item ${p.id === currentRoom.hostId ? 'host-player' : ''}`}>
                   <span>
                     {p.id === currentRoom.hostId && "👑 "}
                     {p.name} {p.id === playerId && "(Te)"}
                   </span>
-                  {isHost && p.id !== playerId && (
-                    <button 
-                      className="kick-button"
-                      onClick={() => handleKickPlayer(p.id)}
-                      title="Játékos kirúgása"
-                    >
-                      ✕
-                    </button>
+                        {isHost && p.id !== playerId && (
+                            <button
+                                className="kick-button"
+                                onClick={() => handleKickPlayer(p.id)}
+                                title="Játékos kirúgása"
+                            >
+                              ✕
+                            </button>
+                        )}
+                      </div>
+                  ))}
+                </div>
+
+                <div className="waiting-actions">
+                  {isHost && (
+                      <button
+                          className="neon-button start-button"
+                          onClick={handleStartGame}
+                          disabled={!currentRoom.players || currentRoom.players.length < 3}
+                      >
+                        {!currentRoom.players || currentRoom.players.length < 3
+                            ? `Még ${3 - (currentRoom.players?.length || 0)} játékos hiányzik`
+                            : "Játék indítása"}
+                      </button>
                   )}
                 </div>
-              ))}
-            </div>
-
-            <div className="waiting-actions">
-              {isHost && (
-                <button 
-                  className="neon-button start-button" 
-                  onClick={handleStartGame}
-                  disabled={!currentRoom.players || currentRoom.players.length < 3}
-                >
-                  {!currentRoom.players || currentRoom.players.length < 3 
-                    ? `Még ${3 - (currentRoom.players?.length || 0)} játékos hiányzik` 
-                    : "Játék indítása"}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Játék közben */}
-        {gameState === "playing" && (
-          <div className="game-screen">
-            <h2 className="centered-text">Játék folyamatban</h2>
-            <div className="timer">{formatTime(timeLeft)}</div>
-            <div className="word-display">
-              <h3>A te szavad:</h3>
-              <div className={myWord === "IMPOSZTOR" ? "impostor-word" : "normal-word"}>
-                {myWord || "Betöltés..."}
               </div>
-              {myWord === "IMPOSZTOR" ? (
-                <div className="impostor-hint">
-                  👹 TE VAGY AZ IMPOSZTOR! 👹<br />
-                  Próbálj elrejtőzni és megtéveszteni a többieket!
-                </div>
-              ) : (
-                <div className="normal-hint">
-                  😇 Ártatlan vagy! 😇<br />
-                  Találd ki, ki az imposztor!
-                </div>
-              )}
-            </div>
-            
-            <div className="players-in-game">
-              <h3>Játékosok:</h3>
-              {currentRoom?.players?.map((p) => (
-                <div key={p.id} className={`player-item ${p.id === currentRoom.hostId ? 'host-player' : ''}`}>
-                  {p.id === currentRoom.hostId && "👑 "}
-                  {p.name} {p.id === playerId && "(Te)"}
-                </div>
-              ))}
-            </div>
+          )}
 
-            <button className="neon-button secondary" onClick={handleLeaveRoom}>
-              Kilépés
-            </button>
-          </div>
-        )}
+          {/* Játék közben */}
+          {gameState === "playing" && (
+              <div className="game-screen">
+                <h2 className="centered-text">Játék folyamatban</h2>
+                <div className="timer">{formatTime(timeLeft)}</div>
+                <div className="word-display">
+                  <h3>A te szavad:</h3>
+                  <div className={myWord === "IMPOSZTOR" ? "impostor-word" : "normal-word"}>
+                    {myWord || "Betöltés..."}
+                  </div>
+                  {myWord === "IMPOSZTOR" ? (
+                      <div className="impostor-hint">
+                        👹 TE VAGY AZ IMPOSZTOR! 👹<br />
+                        Próbálj elrejtőzni és megtéveszteni a többieket!
+                      </div>
+                  ) : (
+                      <div className="normal-hint">
+                        😇 Ártatlan vagy! 😇<br />
+                        Találd ki, ki az imposztor!
+                      </div>
+                  )}
+                </div>
 
-        {/* Szavazás */}
-        {gameState === "voting" && (
-          <div className="voting-screen">
-            <h2 className="centered-text">Szavazz ki valakit!</h2>
-            <p>Ki lehet az imposztor? Szavazz a gomb megnyomásával!</p>
-            <div className="players-list">
-              {currentRoom?.players?.map((p) => (
-                <div key={p.id} className={`player-item ${p.id === currentRoom.hostId ? 'host-player' : ''}`}>
+                <div className="players-in-game">
+                  <h3>Játékosok:</h3>
+                  {currentRoom?.players?.map((p) => (
+                      <div key={p.id} className={`player-item ${p.id === currentRoom.hostId ? 'host-player' : ''}`}>
+                        {p.id === currentRoom.hostId && "👑 "}
+                        {p.name} {p.id === playerId && "(Te)"}
+                      </div>
+                  ))}
+                </div>
+
+                <button className="neon-button secondary" onClick={handleLeaveRoom}>
+                  Kilépés
+                </button>
+              </div>
+          )}
+
+          {/* Szavazás */}
+          {gameState === "voting" && (
+              <div className="voting-screen">
+                <h2 className="centered-text">Szavazz ki valakit!</h2>
+                <p>Ki lehet az imposztor? Szavazz a gomb megnyomásával!</p>
+                <div className="players-list">
+                  {currentRoom?.players?.map((p) => (
+                      <div key={p.id} className={`player-item ${p.id === currentRoom.hostId ? 'host-player' : ''}`}>
                   <span>
                     {p.id === currentRoom.hostId && "👑 "}
                     {p.name} - Szavazatok: {votes[p.id] || 0}
                   </span>
-                  <button
-                    className="neon-button vote-button"
-                    onClick={() => handleVote(p.id)}
-                    disabled={p.id === playerId}
-                  >
-                    {p.id === playerId ? "Te" : "Szavazás"}
+                        <button
+                            className="neon-button vote-button"
+                            onClick={() => handleVote(p.id)}
+                            disabled={p.id === playerId}
+                        >
+                          {p.id === playerId ? "Te" : "Szavazás"}
+                        </button>
+                      </div>
+                  ))}
+                </div>
+              </div>
+          )}
+
+          {/* Eredmény */}
+          {gameState === "ended" && impostorResult && (
+              <div className="results-screen">
+                <h2 className="centered-text">Játék vége!</h2>
+                <div className="result-info">
+                  <p>
+                    Az imposztor: <strong>{
+                    currentRoom?.players?.find(
+                        (p) => p.id === impostorResult.impostorId
+                    )?.name
+                  }</strong>
+                  </p>
+                  <p className={impostorResult.impostorCaught ? "success" : "failure"}>
+                    {impostorResult.impostorCaught
+                        ? "🎉 Az imposztort elkaptátok!"
+                        : "😔 Az imposztor megmenekült!"}
+                  </p>
+                </div>
+
+                <div className="vote-results">
+                  <h3>Szavazatok:</h3>
+                  {currentRoom?.players?.map((p) => (
+                      <div key={p.id} className="vote-item">
+                        {p.name}: {impostorResult.voteCount?.[p.id] || 0} szavazat
+                      </div>
+                  ))}
+                </div>
+
+                <div className="result-actions">
+                  <button className="neon-button" onClick={handlePlayAgain}>
+                    Új játék
+                  </button>
+                  <button className="neon-button secondary" onClick={handleLeaveRoom}>
+                    Vissza a lobbyba
                   </button>
                 </div>
-              ))}
-            </div>
+              </div>
+          )}
+        </main>
+
+        <footer className="app-footer">
+          <div className="footer-text">
+            Code ❤️ by VLevente
           </div>
-        )}
-
-        {/* Eredmény */}
-        {gameState === "ended" && impostorResult && (
-          <div className="results-screen">
-            <h2 className="centered-text">Játék vége!</h2>
-            <div className="result-info">
-              <p>
-                Az imposztor: <strong>{
-                  currentRoom?.players?.find(
-                    (p) => p.id === impostorResult.impostorId
-                  )?.name
-                }</strong>
-              </p>
-              <p className={impostorResult.impostorCaught ? "success" : "failure"}>
-                {impostorResult.impostorCaught
-                  ? "🎉 Az imposztort elkaptátok!"
-                  : "😔 Az imposztor megmenekült!"}
-              </p>
-            </div>
-            
-            <div className="vote-results">
-              <h3>Szavazatok:</h3>
-              {currentRoom?.players?.map((p) => (
-                <div key={p.id} className="vote-item">
-                  {p.name}: {impostorResult.voteCount?.[p.id] || 0} szavazat
-                </div>
-              ))}
-            </div>
-
-            <div className="result-actions">
-              <button className="neon-button" onClick={handlePlayAgain}>
-                Új játék
-              </button>
-              <button className="neon-button secondary" onClick={handleLeaveRoom}>
-                Vissza a lobbyba
-              </button>
-            </div>
-          </div>
-        )}
-      </main>
-
-      <footer className="app-footer">
-        <div className="footer-text">
-          Code ❤️ by VLevente
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
   );
 };
 
