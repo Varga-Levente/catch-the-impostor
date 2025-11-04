@@ -1,0 +1,8 @@
+{
+    "gameTime": 120,
+    "minPlayers": 3,
+    "maxPlayers": 6,
+    "votingTime": 60,
+    "reconnectionTimeout": 30000,
+    "roomCleanupInterval": 300000
+}
